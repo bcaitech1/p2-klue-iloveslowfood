@@ -31,8 +31,55 @@ COLUMNS = [
 
 
 
+def load_data(
+    root: str, drop_id: bool = True, encode_label: bool = True
+) -> pd.DataFrame:
+    """데이터를 불러오는 함수로, EDA를 위해 활용
+
+    Args:
+        path (str): 데이터 경로
+        drop_id (bool, optional): ID 컬럼을 제외할 지 여부를 설정. Defaults to True.
+        encode_label (bool, optional): 레이블을 인코딩할 지 여부를 설정. Defaults to True.
+
+    Returns:
+        pd.DataFrame: 적어도 relation state, entity1/entity2 텍스트와 위치, 레이블이 포함된 데이터프레임
+    """
+    if 'preprocess' in root:
+        return pd.read_csv(root)
+    
+    data = pd.read_csv(root, sep="\t", header=None, names=COLUMNS)
+
+    # drop 'id' column
+    if drop_id:
+        data.drop("id", axis=1, inplace=True)
+
+    # encode label from string to integer
+    if encode_label:
+        enc = LabelEncoder()
+        data["label"] = data["label"].apply(lambda x: enc.transform(x))
+
+    return data
+
+
+# TODO: REDataset_trainer와 REDatatset은 굳이 나눌 필요가 없음. 대회 동안 구현을 비효율적으로 했을 뿐, 하나로 묶어줄 필요가 있음
+class REDataset_trainer(Dataset):
+    """transformers의 Trainer를 활용한 학습에 활용되는 데이터셋"""    
+    def __init__(self, tokenized_dataset, labels):
+        self.tokenized_dataset = tokenized_dataset
+        self.labels = labels
+    
+    def __getitem__(self, idx):
+        item = {key: torch.as_tensor(val[idx]) for key, val in self.tokenized_dataset.items()}
+        item['labels'] = torch.as_tensor(self.labels[idx])
+        return item
+
+    def __len__(self):
+        return len(self.labels)
+    
+
 
 class REDataset(Dataset):
+    """torch를 활용한 학습에 활용되는 데이터셋"""    
     def __init__(
         self,
         root: str = Config.Train,
@@ -82,9 +129,6 @@ class REDataset(Dataset):
 
         return data
 
-
-
-# TODO: K-Fold
 
 
 def split_train_test_loader(
@@ -145,39 +189,8 @@ def split_train_test_loader(
     return train_loader, test_loader
 
 
-# userd for EDA mainly
-def load_data(
-    path: str, drop_id: bool = True, encode_label: bool = True
-) -> pd.DataFrame:
-    """데이터를 불러오는 함수로, EDA를 위해 활용
-
-    Args:
-        path (str): 데이터 경로
-        drop_id (bool, optional): ID 컬럼을 제외할 지 여부를 설정. Defaults to True.
-        encode_label (bool, optional): 레이블을 인코딩할 지 여부를 설정. Defaults to True.
-
-    Returns:
-        pd.DataFrame: 적어도 relation state, entity1/entity2 텍스트와 위치, 레이블이 포함된 데이터프레임
-    """
-    data = pd.read_csv(path, sep="\t", header=None, names=COLUMNS)
-
-    # test data have no labels
-    if path == Config.Test:
-        data.drop("label", axis=1, inplace=True)
-
-    # drop 'id' column
-    if drop_id:
-        data.drop("id", axis=1, inplace=True)
-
-    # encode label from string to integer
-    if encode_label:
-        enc = LabelEncoder()
-        data["label"] = data["label"].apply(lambda x: enc.transform(x))
-
-    return data
-
-
 class LabelEncoder:
+    """'관계_없음' 등의 문자열 레이블을 정수형으로 인코딩하거나, 정수형 레이블을 문자열 레이블로 디코딩하는 클래스"""    
     def __init__(self):
         self.encoder = load_pickle(Config.Label)
         self.decoder = {j: i for j, i in self.encoder.items()}
@@ -192,6 +205,7 @@ class LabelEncoder:
 
 
 class LabelEncoder41:
+    """LabelEncoder와 역할은 같지만, 41가지 카테고리('관계_없음' 제외) 학습 시 활용되는 인코더/디코더 클래스"""    
     def __init__(self):
         self.encoder = load_pickle(Config.Label41)
         self.decoder = {j: i for j, i in self.encoder.items()}
