@@ -1,5 +1,4 @@
 """torch를 활용한 추론 시 사용하는 모듈"""
-
 import argparse
 import os
 from tqdm import tqdm
@@ -37,7 +36,8 @@ def predict(
     pred_list = []
     with torch.no_grad():
         for sentences, _ in tqdm(dataloader, desc="[Inference]"):
-            if model_type == ModelType.XLMSequenceClf:
+            # TODO: 좀더 깔끔하게 짤 수는 없을까?
+            if model_type in [ModelType.XLMSequenceClf, ModelType.XLMSequenceClfL]:
                 outputs = model(**sentences).logits
             elif model_type == ModelType.Base:
                 outputs = model(**sentences).pooler_output
@@ -51,6 +51,7 @@ def predict(
 
     # export phase
     submission = pd.DataFrame(dict(pred=pred_arr.tolist()))
+
     if save_path:
         model_name = os.path.basename(load_state_dict)
         if model_name not in os.listdir(save_path):
@@ -84,3 +85,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     predict(**vars(args))
+
