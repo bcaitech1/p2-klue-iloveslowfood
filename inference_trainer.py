@@ -1,3 +1,5 @@
+"""transformers의 Trainer 활용 시 추론에 사용하는 모듈"""
+
 import argparse
 import numpy as np
 import pandas as pd
