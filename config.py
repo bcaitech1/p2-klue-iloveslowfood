@@ -124,12 +124,10 @@ class Loss:
 @dataclass
 class PreProcessType:
     Base: str = "Base"  # No preprocessing
-    ES: str = (
-        "EntitySeparation"  # Entity Separation, method as baseline of boostcamp itself
-    )
-    ESP: str = "ESPositionEmbedding"  # Entity Separation with Position Embedding, add scalar for each values in entities
-    EM: str = "EntityMarker"  # Entity Marking
-    EMSP: str = "EntityMarkerSeparationPositionEmbedding"
+    ES: str = "EntitySeparation"  # [개체1] [SEP] [개체2] [SEP] 제시문
+    ESP: str = "ESPositionEmbedding"  # 형태는 ES와 동일하나, 개체 토큰의 position embedding에 scalar를 더함
+    EM: str = "EntityMarker"  # 제시문 내 개체 양 옆에 스페셜 토큰을 추가: [E1] 개체1 [/E1] ... [E2] 개체2 [/E2]
+    EMSP: str = "EntityMarkerSeparationPositionEmbedding" # 형태는 EM과 동일하나, 개체 토큰의 position embedding에 scalar를 더함
 
 
 @dataclass
@@ -137,16 +135,15 @@ class ModelType:
     BertBase: str = "BertModel"
     BertSequenceClf: str = "BertForSequenceClassification"
     
-    VanillaBert: str = "VanillaBert"
-    VanillaBert_v2: str = "VanillaBert_v2"
-    
-    
-    KoELECTRAv3: str = "KoELECTRAv3"
-    KoBert: str = "monologg/kobert"
-
     XLMSequenceClf: str = "XLMSequenceClf"
     XLMSequenceClfL: str = "XLMSequenceClfLarge"
     XLMBase: str = "XLMBase"
+
+    VanillaBert: str = "VanillaBert"
+    VanillaBert_v2: str = "VanillaBert_v2"
+
+    KoELECTRAv3: str = "KoELECTRAv3"
+    KoBert: str = "monologg/kobert"
 
 
 @dataclass
