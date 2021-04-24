@@ -1,3 +1,5 @@
+"""torch를 활용한 추론 시 사용하는 모듈"""
+
 import argparse
 import os
 from tqdm import tqdm
@@ -49,7 +51,6 @@ def predict(
 
     # export phase
     submission = pd.DataFrame(dict(pred=pred_arr.tolist()))
-
     if save_path:
         model_name = os.path.basename(load_state_dict)
         if model_name not in os.listdir(save_path):
