@@ -5,6 +5,14 @@ from config import Loss, Config
 
 
 def get_criterion(type: str = Loss.CE):
+    """지정한 type에 따른 Loss 함수를 리턴
+
+    Args:
+        type (str, optional): loss 종류를 설정. 크로스엔트로피('crossentropyloss'), 레이블스무딩('labelsmoothingLoss') 지원. Defaults to 'crossentropyloss'.
+
+    Returns:
+        torch.nn: loss 함수
+    """    
     if type == Loss.CE:
         criterion = nn.CrossEntropyLoss()
     elif type == Loss.LS:
