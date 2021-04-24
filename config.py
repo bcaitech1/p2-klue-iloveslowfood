@@ -3,11 +3,6 @@ from dataclasses import dataclass
 import torch
 
 
-TRAIN = 
-TRAIN_UP = 
-TRAIN_AUG = 
-TRAIN_41 = 
-TRAIN_BIN = 
 TEST = "./input/data/test/test.tsv"
 LABEL = "./input/data/label_type.pkl"
 LABEL41 = "./input/data/label_type41.pkl"
@@ -23,86 +18,6 @@ class Config:
     DOT + SOMETHING: '../something/something' <- 디렉토리 경로를 바꿔주게 됨
     """
 
-    Train: str = "./input/data/train/train.tsv"
-    TrainUp: str = "./preprocessed/train_upsampled.csv"
-    TrainAug: str = "./preprocessed/train_augmented.csv"
-    Train41: str = "./preprocessed/train41.csv" # 관계 없음(0) 레이블을 제외한 41가지 클래스의 데이터
-    TrainBin: str = "./preprocessed/train_binary.csv" # 관계 있음/없음의 이진 분류 데이터
-    
-    # 단일 언어 K-Fold 앙상블을 위한 데이터셋
-    TrainMono1: str = './preprocessed/kfold_0_train_monolingual.csv'
-    TrainMono2: str = './preprocessed/kfold_1_train_monolingual.csv'
-    TrainMono3: str = './preprocessed/kfold_2_train_monolingual.csv'
-    TrainMono4: str = './preprocessed/kfold_3_train_monolingual.csv'
-    TrainMono5: str = './preprocessed/kfold_4_train_monolingual.csv'
-    
-    #
-    TestMono1: str = './preprocessed/kfold_0_test_monolingual.csv'
-    TestMono2: str = './preprocessed/kfold_1_test_monolingual.csv'
-    TestMono3: str = './preprocessed/kfold_2_test_monolingual.csv'
-    TestMono4: str = './preprocessed/kfold_3_test_monolingual.csv'
-    TestMono5: str = './preprocessed/kfold_4_test_monolingual.csv'
-        
-    
-    # 다중 언어 단일 모델 학습을 위한 데이터셋
-    TrainMultiAll: str = './preprocessed/train_multilingual.csv' # 학습 데이터
-
-    ValidMultiSingularEn: str = "./preprocessed/valid_en_multilingual_singular.csv" # 검증 데이터(영어)
-    ValidMultiSingularFr: str = "./preprocessed/valid_fr_multilingual_singular.csv" # 검증 데이터(프랑스어)
-    ValidMultiSingularKr: str = "./preprocessed/valid_kr_multilingual_singular.csv" # 검증 데이터(한국어)
-    ValidMultiSingularSp: str = "./preprocessed/valid_sp_multilingual_singular.csv" # 검증 데이터(스페인어)
-    
-    # 다중 언어 K-Fold 앙상블을 위한 데이터셋
-    TrainMulti1: str = './preprocessed/kfold_0_train_multilingual.csv' # 학습 데이터(fold1)
-    TrainMulti2: str = './preprocessed/kfold_1_train_multilingual.csv' # 학습 데이터(fold2)
-    TrainMulti3: str = './preprocessed/kfold_2_train_multilingual.csv' # 학습 데이터(fold3)
-    TrainMulti4: str = './preprocessed/kfold_3_train_multilingual.csv' # 학습 데이터(fold4)
-    TrainMulti5: str = './preprocessed/kfold_4_train_multilingual.csv' # 학습 데이터(fold5)
-
-    TestMulti1: str = './preprocessed/kfold_0_test_multilingual.csv'# 검증 데이터(fold1)
-    TestMulti2: str = './preprocessed/kfold_1_test_multilingual.csv'# 검증 데이터(fold2)
-    TestMulti3: str = './preprocessed/kfold_2_test_multilingual.csv'# 검증 데이터(fold3)
-    TestMulti4: str = './preprocessed/kfold_3_test_multilingual.csv'# 검증 데이터(fold4)
-    TestMulti5: str = './preprocessed/kfold_4_test_multilingual.csv'# 검증 데이터(fold5)
-    
-    # 다중 언어 K-Fold 학습 시 fold별 검증 데이터
-    ValidFold0kr: str = "./preprocessed/kfold_0_test_multilingual_kr.csv"
-    ValidFold1kr: str = "./preprocessed/kfold_1_test_multilingual_kr.csv"
-    ValidFold2kr: str = "./preprocessed/kfold_2_test_multilingual_kr.csv"
-    ValidFold3kr: str = "./preprocessed/kfold_3_test_multilingual_kr.csv"
-    ValidFold4kr: str = "./preprocessed/kfold_4_test_multilingual_kr.csv"
-    
-    # 프랑스어
-    ValidFold0fr: str = "./preprocessed/kfold_0_test_multilingual_fr.csv"
-    ValidFold1fr: str = "./preprocessed/kfold_1_test_multilingual_fr.csv"
-    ValidFold2fr: str = "./preprocessed/kfold_2_test_multilingual_fr.csv"
-    ValidFold3fr: str = "./preprocessed/kfold_3_test_multilingual_fr.csv"
-    ValidFold4fr: str = "./preprocessed/kfold_4_test_multilingual_fr.csv"
-    
-    # 스페인어
-    ValidFold0sp: str = "./preprocessed/kfold_0_test_multilingual_sp.csv"
-    ValidFold1sp: str = "./preprocessed/kfold_1_test_multilingual_sp.csv"
-    ValidFold2sp: str = "./preprocessed/kfold_2_test_multilingual_sp.csv"
-    ValidFold3sp: str = "./preprocessed/kfold_3_test_multilingual_sp.csv"
-    ValidFold4sp: str = "./preprocessed/kfold_4_test_multilingual_sp.csv"
-    
-    # 영어
-    ValidFold0en: str = "./preprocessed/kfold_0_test_multilingual_en.csv"
-    ValidFold1en: str = "./preprocessed/kfold_1_test_multilingual_en.csv"
-    ValidFold2en: str = "./preprocessed/kfold_2_test_multilingual_en.csv"
-    ValidFold3en: str = "./preprocessed/kfold_3_test_multilingual_en.csv"
-    ValidFold4en: str = "./preprocessed/kfold_4_test_multilingual_en.csv"
-    
-    
-    TestEn: str = "./preprocessed/multilingual/test/test_english.csv"
-    TestFr: str = "./preprocessed/multilingual/test/test_french.csv"
-    TestKr: str = "./preprocessed/multilingual/test/test_korean.csv"
-    TestSp: str = "./preprocessed/multilingual/test/test_spanish.csv"
-            
-        
-    Test: str = TEST if os.path.isfile(TEST) else DOT + TEST
-    SamplingWeights: str = './preprocessed/sampling_weights.pkl'
-    SamplingWeightsP: str = './preprocessed/sampling_weights_modified.pkl'
     ValidSize: float = 0.1
     Label: str = LABEL if os.path.isfile(LABEL) else DOT + LABEL
     Label41: str = LABEL41 if os.path.isfile(LABEL41) else DOT + LABEL41
@@ -131,6 +46,73 @@ class Config:
     CheckPoint: str = "./saved_models"
     SavePath: str = "./predictions"
 
+    # Data Configuration
+    Train: str = "./input/data/train/train.tsv"
+    TrainUp: str = "./preprocessed/train_upsampled.csv"
+    TrainAug: str = "./preprocessed/train_augmented.csv"
+    Train41: str = "./preprocessed/train41.csv" # 관계 없음(0) 레이블을 제외한 41가지 클래스의 데이터
+    TrainBin: str = "./preprocessed/train_binary.csv" # 관계 있음/없음의 이진 분류 데이터
+
+    # 리더보드 제출용 테스트 데이터
+    TestEn: str = "./preprocessed/test/test_english.csv" # 영어
+    TestFr: str = "./preprocessed/test/test_french.csv" # 프랑스어
+    TestKr: str = "./preprocessed/test/test_korean.csv" # 한국어
+    TestSp: str = "./preprocessed/test/test_spanish.csv" # 스페인어
+    
+    # 단일 언어 K-Fold 학습을 위한 데이터셋
+    TrainMono1: str = './preprocessed/kfold_monolingual/train/kfold_0_train_monolingual.csv' # 학습 데이터(fold1)
+    TrainMono2: str = './preprocessed/kfold_monolingual/train/kfold_1_train_monolingual.csv' # 학습 데이터(fold2)
+    TrainMono3: str = './preprocessed/kfold_monolingual/train/kfold_2_train_monolingual.csv' # 학습 데이터(fold3)
+    TrainMono4: str = './preprocessed/kfold_monolingual/train/kfold_3_train_monolingual.csv' # 학습 데이터(fold4)
+    TrainMono5: str = './preprocessed/kfold_monolingual/train/kfold_4_train_monolingual.csv' # 학습 데이터(fold5)
+    
+    ValidMono1: str = './preprocessed/kfold_monolingual/valid/kfold_0_test_monolingual.csv' # 검증 데이터(fold1)
+    ValidMono2: str = './preprocessed/kfold_monolingual/valid/kfold_1_test_monolingual.csv' # 검증 데이터(fold2)
+    ValidMono3: str = './preprocessed/kfold_monolingual/valid/kfold_2_test_monolingual.csv' # 검증 데이터(fold3)
+    ValidMono4: str = './preprocessed/kfold_monolingual/valid/kfold_3_test_monolingual.csv' # 검증 데이터(fold4)
+    ValidMono5: str = './preprocessed/kfold_monolingual/valid/kfold_4_test_monolingual.csv' # 검증 데이터(fold5)
+        
+    
+    # 다중 언어 단일 모델 학습을 위한 데이터셋
+    TrainMulti36k: str = './preprocessed/singular_multilingual_36k/train_multilingual.csv' # 학습 데이터
+
+    ValidMultiSingularEn: str = "./preprocessed/valid_en_multilingual_singular.csv" # 검증 데이터(영어)
+    ValidMultiSingularFr: str = "./preprocessed/valid_fr_multilingual_singular.csv" # 검증 데이터(프랑스어)
+    ValidMultiSingularKr: str = "./preprocessed/valid_kr_multilingual_singular.csv" # 검증 데이터(한국어)
+    ValidMultiSingularSp: str = "./preprocessed/valid_sp_multilingual_singular.csv" # 검증 데이터(스페인어)
+    
+    # 다중 언어 K-Fold 학습을 위한 데이터셋
+    TrainMulti1: str = './preprocessed/kfold_multilingual/train/kfold_0_train_multilingual.csv' # 학습 데이터(fold1)
+    TrainMulti2: str = './preprocessed/kfold_multilingual/train/kfold_1_train_multilingual.csv' # 학습 데이터(fold2)
+    TrainMulti3: str = './preprocessed/kfold_multilingual/train/kfold_2_train_multilingual.csv' # 학습 데이터(fold3)
+    TrainMulti4: str = './preprocessed/kfold_multilingual/train/kfold_3_train_multilingual.csv' # 학습 데이터(fold4)
+    TrainMulti5: str = './preprocessed/kfold_multilingual/train/kfold_4_train_multilingual.csv' # 학습 데이터(fold5)
+
+    # 다중 언어 K-Fold 학습 시 fold별 검증 데이터
+    ValidFold0kr: str = "./preprocessed/valid/fold0/kfold_0_test_multilingual_kr.csv" # 한국어
+    ValidFold1kr: str = "./preprocessed/valid/fold1/kfold_1_test_multilingual_kr.csv"
+    ValidFold2kr: str = "./preprocessed/valid/fold2/kfold_2_test_multilingual_kr.csv"
+    ValidFold3kr: str = "./preprocessed/valid/fold3/kfold_3_test_multilingual_kr.csv"
+    ValidFold4kr: str = "./preprocessed/valid/fold4/kfold_4_test_multilingual_kr.csv"
+    
+    ValidFold0fr: str = "./preprocessed/valid/fold0/kfold_0_test_multilingual_fr.csv" # 프랑스어
+    ValidFold1fr: str = "./preprocessed/valid/fold1/kfold_1_test_multilingual_fr.csv"
+    ValidFold2fr: str = "./preprocessed/valid/fold2/kfold_2_test_multilingual_fr.csv"
+    ValidFold3fr: str = "./preprocessed/valid/fold3/kfold_3_test_multilingual_fr.csv"
+    ValidFold4fr: str = "./preprocessed/valid/fold4/kfold_4_test_multilingual_fr.csv"
+    
+    ValidFold0sp: str = "./preprocessed/valid/fold0/kfold_0_test_multilingual_sp.csv" # 스페인어
+    ValidFold1sp: str = "./preprocessed/valid/fold1/kfold_1_test_multilingual_sp.csv"
+    ValidFold2sp: str = "./preprocessed/valid/fold2/kfold_2_test_multilingual_sp.csv"
+    ValidFold3sp: str = "./preprocessed/valid/fold3/kfold_3_test_multilingual_sp.csv"
+    ValidFold4sp: str = "./preprocessed/valid/fold4/kfold_4_test_multilingual_sp.csv"
+    
+    ValidFold0en: str = "./preprocessed/valid/fold0/kfold_0_test_multilingual_en.csv" # 영어
+    ValidFold1en: str = "./preprocessed/valid/fold1/kfold_1_test_multilingual_en.csv"
+    ValidFold2en: str = "./preprocessed/valid/fold2/kfold_2_test_multilingual_en.csv"
+    ValidFold3en: str = "./preprocessed/valid/fold3/kfold_3_test_multilingual_en.csv"
+    ValidFold4en: str = "./preprocessed/valid/fold4/kfold_4_test_multilingual_en.csv"
+    
 
 @dataclass
 class Optimizer:
