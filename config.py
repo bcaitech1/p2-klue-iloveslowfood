@@ -3,10 +3,11 @@ from dataclasses import dataclass
 import torch
 
 
-TRAIN = "./input/data/train/train.tsv"
-TRAIN_AUG = "./preprocessed/train_augmented.csv"
-TRAIN_41 = "./preprocessed/train41.csv"
-TRAIN_BIN = "./preprocessed/train_binary.csv"
+TRAIN = 
+TRAIN_UP = 
+TRAIN_AUG = 
+TRAIN_41 = 
+TRAIN_BIN = 
 TEST = "./input/data/test/test.tsv"
 LABEL = "./input/data/label_type.pkl"
 LABEL41 = "./input/data/label_type41.pkl"
@@ -22,10 +23,83 @@ class Config:
     DOT + SOMETHING: '../something/something' <- 디렉토리 경로를 바꿔주게 됨
     """
 
-    Train: str = TRAIN if os.path.isfile(TRAIN) else DOT + TRAIN
-    TrainP: str = TRAIN_AUG if os.path.isfile(TRAIN_AUG) else DOT + TRAIN_AUG
-    Train41: str = TRAIN_41 if os.path.isfile(TRAIN_41) else DOT + TRAIN_41
-    TrainBin: str = TRAIN_BIN if os.path.isfile(TRAIN_BIN) else DOT + TRAIN_BIN
+    Train: str = "./input/data/train/train.tsv"
+    TrainUp: str = "./preprocessed/train_upsampled.csv"
+    TrainAug: str = "./preprocessed/train_augmented.csv"
+    Train41: str = "./preprocessed/train41.csv" # 관계 없음(0) 레이블을 제외한 41가지 클래스의 데이터
+    TrainBin: str = "./preprocessed/train_binary.csv" # 관계 있음/없음의 이진 분류 데이터
+    
+    # 단일 언어 K-Fold 앙상블을 위한 데이터셋
+    TrainMono1: str = './preprocessed/kfold_0_train_monolingual.csv'
+    TrainMono2: str = './preprocessed/kfold_1_train_monolingual.csv'
+    TrainMono3: str = './preprocessed/kfold_2_train_monolingual.csv'
+    TrainMono4: str = './preprocessed/kfold_3_train_monolingual.csv'
+    TrainMono5: str = './preprocessed/kfold_4_train_monolingual.csv'
+    
+    #
+    TestMono1: str = './preprocessed/kfold_0_test_monolingual.csv'
+    TestMono2: str = './preprocessed/kfold_1_test_monolingual.csv'
+    TestMono3: str = './preprocessed/kfold_2_test_monolingual.csv'
+    TestMono4: str = './preprocessed/kfold_3_test_monolingual.csv'
+    TestMono5: str = './preprocessed/kfold_4_test_monolingual.csv'
+        
+    
+    # 다중 언어 단일 모델 학습을 위한 데이터셋
+    TrainMultiAll: str = './preprocessed/train_multilingual.csv' # 학습 데이터
+
+    ValidMultiSingularEn: str = "./preprocessed/valid_en_multilingual_singular.csv" # 검증 데이터(영어)
+    ValidMultiSingularFr: str = "./preprocessed/valid_fr_multilingual_singular.csv" # 검증 데이터(프랑스어)
+    ValidMultiSingularKr: str = "./preprocessed/valid_kr_multilingual_singular.csv" # 검증 데이터(한국어)
+    ValidMultiSingularSp: str = "./preprocessed/valid_sp_multilingual_singular.csv" # 검증 데이터(스페인어)
+    
+    # 다중 언어 K-Fold 앙상블을 위한 데이터셋
+    TrainMulti1: str = './preprocessed/kfold_0_train_multilingual.csv' # 학습 데이터(fold1)
+    TrainMulti2: str = './preprocessed/kfold_1_train_multilingual.csv' # 학습 데이터(fold2)
+    TrainMulti3: str = './preprocessed/kfold_2_train_multilingual.csv' # 학습 데이터(fold3)
+    TrainMulti4: str = './preprocessed/kfold_3_train_multilingual.csv' # 학습 데이터(fold4)
+    TrainMulti5: str = './preprocessed/kfold_4_train_multilingual.csv' # 학습 데이터(fold5)
+
+    TestMulti1: str = './preprocessed/kfold_0_test_multilingual.csv'# 검증 데이터(fold1)
+    TestMulti2: str = './preprocessed/kfold_1_test_multilingual.csv'# 검증 데이터(fold2)
+    TestMulti3: str = './preprocessed/kfold_2_test_multilingual.csv'# 검증 데이터(fold3)
+    TestMulti4: str = './preprocessed/kfold_3_test_multilingual.csv'# 검증 데이터(fold4)
+    TestMulti5: str = './preprocessed/kfold_4_test_multilingual.csv'# 검증 데이터(fold5)
+    
+    # 다중 언어 K-Fold 학습 시 fold별 검증 데이터
+    ValidFold0kr: str = "./preprocessed/kfold_0_test_multilingual_kr.csv"
+    ValidFold1kr: str = "./preprocessed/kfold_1_test_multilingual_kr.csv"
+    ValidFold2kr: str = "./preprocessed/kfold_2_test_multilingual_kr.csv"
+    ValidFold3kr: str = "./preprocessed/kfold_3_test_multilingual_kr.csv"
+    ValidFold4kr: str = "./preprocessed/kfold_4_test_multilingual_kr.csv"
+    
+    # 프랑스어
+    ValidFold0fr: str = "./preprocessed/kfold_0_test_multilingual_fr.csv"
+    ValidFold1fr: str = "./preprocessed/kfold_1_test_multilingual_fr.csv"
+    ValidFold2fr: str = "./preprocessed/kfold_2_test_multilingual_fr.csv"
+    ValidFold3fr: str = "./preprocessed/kfold_3_test_multilingual_fr.csv"
+    ValidFold4fr: str = "./preprocessed/kfold_4_test_multilingual_fr.csv"
+    
+    # 스페인어
+    ValidFold0sp: str = "./preprocessed/kfold_0_test_multilingual_sp.csv"
+    ValidFold1sp: str = "./preprocessed/kfold_1_test_multilingual_sp.csv"
+    ValidFold2sp: str = "./preprocessed/kfold_2_test_multilingual_sp.csv"
+    ValidFold3sp: str = "./preprocessed/kfold_3_test_multilingual_sp.csv"
+    ValidFold4sp: str = "./preprocessed/kfold_4_test_multilingual_sp.csv"
+    
+    # 영어
+    ValidFold0en: str = "./preprocessed/kfold_0_test_multilingual_en.csv"
+    ValidFold1en: str = "./preprocessed/kfold_1_test_multilingual_en.csv"
+    ValidFold2en: str = "./preprocessed/kfold_2_test_multilingual_en.csv"
+    ValidFold3en: str = "./preprocessed/kfold_3_test_multilingual_en.csv"
+    ValidFold4en: str = "./preprocessed/kfold_4_test_multilingual_en.csv"
+    
+    
+    TestEn: str = "./preprocessed/multilingual/test/test_english.csv"
+    TestFr: str = "./preprocessed/multilingual/test/test_french.csv"
+    TestKr: str = "./preprocessed/multilingual/test/test_korean.csv"
+    TestSp: str = "./preprocessed/multilingual/test/test_spanish.csv"
+            
+        
     Test: str = TEST if os.path.isfile(TEST) else DOT + TEST
     SamplingWeights: str = './preprocessed/sampling_weights.pkl'
     SamplingWeightsP: str = './preprocessed/sampling_weights_modified.pkl'
@@ -37,7 +111,7 @@ class Config:
     NumBinary: int = 2
     Num41: int = 41
     
-    Epochs: int = 20
+    Epochs: int = 10
 
     Batch8: int = 8
     Batch16: int = 16
@@ -50,6 +124,7 @@ class Config:
     LR: float = 1e-6
     LRSlow: float = 25e-7
     LRSlower: float = 1e-7
+    LRRoberta: float = 1e-5
 
     Seed: int = 42
     Device: str = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -95,6 +170,7 @@ class ModelType:
     KoBert: str = "monologg/kobert"
 
     XLMSequenceClf: str = "XLMSequenceClf"
+    XLMSequenceClfL: str = "XLMSequenceClfLarge"
     XLMBase: str = "XLMBase"
 
 
@@ -104,4 +180,6 @@ class PreTrainedType:
     BaseUncased: str = "bert-base-uncased"
     KoELECTRAv3: str = "monologg/koelectra-base-v3-discriminator"
     KoBert: str = "monologg/kobert"
-    XLMRoberta: str = "roberta-base"
+    XLMRoberta: str = "xlm-roberta-base"
+    XLMRobertaL: str = "xlm-roberta-large"
+        
