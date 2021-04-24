@@ -62,7 +62,7 @@ def load_data(
 
 
 # TODO: REDataset_trainer와 REDatatset은 굳이 나눌 필요가 없음. 대회 동안 구현을 비효율적으로 했을 뿐, 하나로 묶어줄 필요가 있음
-class REDataset_trainer(Dataset):
+class REDatasetForTrainer(Dataset):
     """transformers의 Trainer를 활용한 학습에 활용되는 데이터셋"""    
     def __init__(self, tokenized_dataset, labels):
         self.tokenized_dataset = tokenized_dataset
