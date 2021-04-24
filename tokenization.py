@@ -1,9 +1,8 @@
-from tokenizers.models import Model
 from tqdm import tqdm
+from dataclasses import dataclass
 import pandas as pd
 import torch
-from dataclasses import dataclass
-from transformers import BertTokenizer, ElectraTokenizer, RobertaTokenizer, RobertaForSequenceClassification, RobertaModel
+from transformers import BertTokenizer, ElectraTokenizer, RobertaTokenizer, XLMRobertaTokenizer
 from config import ModelType, PreProcessType, PreTrainedType
 
 # 토큰화 결과 [CLS] 토큰이 가장 앞에 붙게 되기 떄문에
@@ -101,12 +100,30 @@ def load_tokenizer(model_type: str = ModelType.KoELECTRAv3, preprocess_type: str
                     ]
                 }
             )
+    elif model_type == ModelType.XLMSequenceClfL:
+        if preprocess_type in [PreProcessType.Base, PreProcessType.ES, PreProcessType.ESP]:
+            print("XLMRobertaTokenizer")
+            tokenizer = XLMRobertaTokenizer.from_pretrained(PreTrainedType.XLMRobertaL)
+            
+        # Entity Marker, Entity Marker Separator with Position Embedding
+        elif preprocess_type in [PreProcessType.EM, PreProcessType.EMSP]:
+            tokenizer = RobertaTokenizer.from_pretrained(PreTrainedType.XLMRoberta)
+            tokenizer.add_special_tokens(
+                {
+                    "additional_special_tokens": [
+                        SpecialToken.E1Open,
+                        SpecialToken.E1Close,
+                        SpecialToken.E2Open,
+                        SpecialToken.E2Close,
+                    ]
+                }
+            )
 
     print("done!")
     return tokenizer
 
 
-def tokenize(data: pd.DataFrame, tokenizer, model_type, preprocess_type: str=PreProcessType.Base):
+def tokenize(data: pd.DataFrame, tokenizer):
     print("Apply Tokenization...", end="\t")
     data_tokenized = tokenizer(
         data["input"].tolist(),
@@ -116,49 +133,8 @@ def tokenize(data: pd.DataFrame, tokenizer, model_type, preprocess_type: str=Pre
         max_length=MAX_LENGTH,
         add_special_tokens=True,
     )
-    if model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase]:
-        print(f'No specific preprocessing for {model_type} yet. Just return tokenized outputs.')
-        return data_tokenized
-        
-    if preprocess_type not in  [PreProcessType.Base, PreProcessType.ES]:
-        tokenized_decoded = data["input"].apply(lambda x: tokenizer.tokenize(x))
-
-        if preprocess_type == PreProcessType.EM:
-            # entity marker
-            entity_intervals = tokenized_decoded.apply(
-                lambda x: find_entity_intervals(x)
-            ).tolist()
-            entity_interval_tensor = make_additional_token_type_ids(
-                entity_intervals, data_size=data.shape[0]
-            )
-            data_tokenized["token_type_ids"] += entity_interval_tensor.long()
-
-        elif preprocess_type == PreProcessType.EMSP:
-            # entity marker
-            entity_intervals = tokenized_decoded.apply(
-                lambda x: find_entity_intervals(x)
-            ).tolist()
-            entity_interval_tensor = make_additional_token_type_ids(
-                entity_intervals, data_size=data.shape[0], type='entity'
-            )
-
-            # entity separation
-            sep_intervals = tokenized_decoded.apply(lambda x: find_sep_intervals(x, model_type)).tolist()
-            sep_interval_tensor = make_additional_token_type_ids(
-                sep_intervals, data_size=data.shape[0], type='sep'
-            )
-
-            data_tokenized["token_type_ids"] += entity_interval_tensor.long()
-            data_tokenized["token_type_ids"] += sep_interval_tensor.long()
-
-        elif preprocess_type == PreProcessType.ESP:
-            # entity separation
-            sep_intervals = tokenized_decoded.apply(lambda x: find_sep_intervals(x, model_type)).tolist()
-            sep_interval_tensor = make_additional_token_type_ids(
-                sep_intervals, data_size=data.shape[0], type='sep'
-            )
-            data_tokenized["token_type_ids"] += sep_interval_tensor.long()
-
+    print('done!')
+    
     return data_tokenized
 
 

@@ -1,175 +1,205 @@
+"""transformers의 Trainer 활용 학습 시 사용되는 모듈"""
+
 import argparse
-import pickle
 import os
-import numpy as np
-import pandas as pd
-import torch
-from torch.utils.data import Dataset, DataLoader
-from sklearn.metrics import accuracy_score
-from transformers import AutoTokenizer, BertForSequenceClassification, Trainer, TrainingArguments, BertConfig
+import warnings
+from tokenization import load_tokenizer
+from transformers import TrainingArguments, Trainer
+import wandb
+from models import load_model
+from dataset import REDatasetForTrainer, split_data, load_data
+from tokenization import tokenize
+from preprocessing import preprocess_text
+from utils import get_timestamp, get_timestamp, set_seed, save_json
+from evaluation import compute_metrics
+from config import ModelType, Config, Optimizer, PreTrainedType, PreProcessType, Loss
+
+warnings.filterwarnings("ignore")
+os.environ['WANDB_LOG_MODEL'] = 'true'
+os.environ['WANDB_WATCH'] = 'all'
+
+TOTAL_SAMPLES = 9000
 
 
-def inference(model, tokenized_sent, device):
-    dataloader = DataLoader(tokenized_sent, batch_size=40, shuffle=False)
-    model.eval()
-    output_pred = []
-  
-    for i, data in enumerate(dataloader):
-        with torch.no_grad():
-            outputs = model(
-                input_ids=data['input_ids'].to(device),
-                attention_mask=data['attention_mask'].to(device),
-                token_type_ids=data['token_type_ids'].to(device)
-                )
-            logits = outputs[0]
-            logits = logits.detach().cpu().numpy()
-            result = np.argmax(logits, axis=-1)
-
-            output_pred.append(result)
-  
-    return np.array(output_pred).flatten()
-
-def load_test_dataset(dataset_dir, tokenizer):
-    test_dataset = load_data(dataset_dir)
-    test_label = test_dataset['label'].values
-    # tokenizing dataset
-    tokenized_test = tokenized_dataset(test_dataset, tokenizer)
-    return tokenized_test, test_label
-
-
-
-
-class RE_Dataset(Dataset):
-    def __init__(self, tokenized_dataset, labels):
-        self.tokenized_dataset = tokenized_dataset
-        self.labels = labels
+def train(
+    model_type: str = ModelType.VanillaBert,  # 불러올 모델 프레임
+    pretrained_type: str = PreTrainedType.MultiLingual,  # 모델에 활용할 Pretrained BERT Backbone 이름
+    num_classes: int = Config.NumClasses,  # 카테고리 수
+    pooler_idx: int = 0,  # 인코딩 결과로부터 추출할 hidden state. 0: [CLS]
+    dropout: float = 0.8,
+    load_state_dict: str = None,  # (optional) 저장한 weight 경로
+    data_root: str = Config.Train,  # 학습 데이터 경로
+    preprocess_type: str = PreProcessType.Base,  # 텍스트 전처리 타입
+    epochs: int = Config.Epochs,
+    valid_size: float = Config.ValidSize,  # 학습 데이터 중 검증에 활용할 데이터 비율
+    train_batch_size: int = Config.Batch32,
+    valid_batch_size: int = 512,
+    optim_type: str = Optimizer.Adam,
+    loss_type: str = Loss.CE,
+    lr: float = Config.LR,
+    lr_scheduler: str = Optimizer.CosineAnnealing,
+    device: str = Config.Device,
+    seed: int = Config.Seed,
+    save_path: str = Config.CheckPoint,
+):
+    K_FOLD = False
+    set_seed(seed)
     
-    def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx]) for key, val in self.tokenized_dataset.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
-        return item
 
-    def __len__(self):
-        return len(self.labels)
-
-def preprocessing_dataset(dataset, label_type):
-    label = []
-    for i in dataset[8]:
-        if i == 'blind':
-            label.append(100)
-        else:
-            label.append(label_type[i])
-    out_dataset = pd.DataFrame({'sentence':dataset[1],'entity_01':dataset[2],'entity_02':dataset[5],'label':label})
-    return out_dataset
-
-def load_data(dataset_dir):
-    with open('./input/data/label_type.pkl', 'rb') as f:
-        label_type = pickle.load(f)
-    dataset = pd.read_csv(dataset_dir, delimiter='\t', header=None)
-    dataset = preprocessing_dataset(dataset, label_type)
-    return dataset
-
-def tokenized_dataset(dataset, tokenizer):
-    concat_entity = []
-    for e01, e02 in zip(dataset['entity_01'], dataset['entity_02']):
-        temp = ''
-        temp = e01 + '[SEP]' + e02
-        concat_entity.append(temp)
-    tokenized_sentences = tokenizer(
-        concat_entity,
-        list(dataset['sentence']),
-        return_tensors="pt",
-        padding=True,
-        truncation=True,
-        max_length=100,
-        add_special_tokens=True,
-        )
-    return tokenized_sentences
-
-
-def compute_metrics(pred):
-    labels = pred.label_ids
-    preds = pred.predictions.argmax(-1)
-    acc = accuracy_score(labels, preds)
-    return {'accuracy': acc}
-
-def train():
-    MODEL_NAME = "bert-base-multilingual-cased"
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    # tokenization phase
+    tokenizer = load_tokenizer(model_type=model_type, preprocess_type=preprocess_type)
     
-    # load dataset
-    train_dataset = load_data("./input/data/train/train.tsv")
+    # Load data
+    # Monolingual K-Fold DataL just for KOR
+    if os.path.basename(data_root).startswith('kfold') and 'monolingual' in data_root:
+        print(f'TRAIN TYPE: monolingual K-Fold - {os.path.basename(data_root)}')
+        K_FOLD = True
+        fold_num = int(os.path.basename(data_root).split('_')[1])
+        train_data = load_data(f'./preprocessed/kfold_{fold_num}_train_monolingual.csv')
+        valid_data = load_data(f'./preprocessed/kfold_{fold_num}_test_monolingual.csv')
+        train_data = preprocess_text(train_data, model_type, preprocess_type)
+        valid_data = preprocess_text(valid_data, model_type, preprocess_type)
+    
+    # Multilingual K-Fold DataL for KOR, ENG, FRN, SPN
+    elif os.path.basename(data_root).startswith('kfold') and 'multilingual' in data_root:
+        print(f'TRAIN TYPE: multilingual K-Fold - {os.path.basename(data_root)}')
+        K_FOLD = True
+        fold_num = int(os.path.basename(data_root).split('_')[1])
+        train_data = load_data(f'./preprocessed/kfold_{fold_num}_train_multilingual.csv')
+        valid_data = load_data(f'./preprocessed/kfold_{fold_num}_test_multilingual.csv')
+        train_data = preprocess_text(train_data, model_type, preprocess_type)
+        valid_data = preprocess_text(valid_data, model_type, preprocess_type)
+    
+    # For singualar model which contains monolingual, multilingual
+    else:
+        print('TRAIN TYPE: singular')
+        data = load_data(data_root)
+        data = preprocess_text(data, model_type, preprocess_type)
+    
+    # for K-Fold learning
+    if K_FOLD:
+        tokenized_train = tokenize(train_data, tokenizer)
+        tokenized_valid = tokenize(valid_data, tokenizer)
+        
+        train_labels = train_data['label'].values
+        valid_labels = valid_data['label'].values
 
-    #dev_dataset = load_data("./dataset/train/dev.tsv")
-    train_label = train_dataset['label'].values
+        train_dataset = REDatasetForTrainer(tokenized_train, train_labels)
+        valid_dataset = REDatasetForTrainer(tokenized_valid, valid_labels)
+    
+    # for singular learning
+    elif valid_size > 0:
+        train_data, valid_data = split_data(data, valid_size)
+        tokenized_train = tokenize(train_data, tokenizer)
+        tokenized_valid = tokenize(valid_data, tokenizer)
+        
+        train_labels = train_data['label'].values
+        valid_labels = valid_data['label'].values
 
-    tokenized_train = tokenized_dataset(train_dataset, tokenizer)
+        train_dataset = REDatasetForTrainer(tokenized_train, train_labels)
+        valid_dataset = REDatasetForTrainer(tokenized_valid, valid_labels)
+    
+    # for singular learning with WHOLE train data. TODO: maybe insufficient implementation
+    else: 
+        tokenized_train = tokenize(data, tokenizer)
+        train_labels = data['label'].values
+        train_dataset = REDatasetForTrainer(tokenized_train, train_labels)
 
-    RE_train_dataset = RE_Dataset(tokenized_train, train_label)
-
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
-    bert_config = BertConfig.from_pretrained(MODEL_NAME)
-    bert_config.num_labels = 42
-    model = BertForSequenceClassification.from_pretrained(MODEL_NAME, config=bert_config)
-    model.parameters
-    model.to(device)
-
-    training_args = TrainingArguments(
-        output_dir="./result",
-        save_total_limit=3,
-        save_steps=500,
-        num_train_epochs=15,
-        learning_rate=2e-5,
-        per_device_train_batch_size=16,
-        warmup_steps=500,
-        weight_decay=0.01,
-        logging_dir='./logs',
-        logging_steps=100
+    model = load_model(
+        model_type, pretrained_type, num_classes, load_state_dict, pooler_idx, dropout
     )
-
+    model.resize_token_embeddings(len(tokenizer))
+    model.to(device)
+    model.train()
+    
+    # train configuration phase
+    training_args = TrainingArguments(
+        output_dir=save_path,
+        save_total_limit=1,
+        save_steps=200,
+        evaluation_strategy='epoch',
+        num_train_epochs=epochs,
+        learning_rate=lr,
+        per_device_train_batch_size=train_batch_size,
+        per_device_eval_batch_size=valid_batch_size,
+        warmup_steps=300,
+        weight_decay=0.01,
+        dataloader_num_workers=2,
+        label_smoothing_factor=0.5,
+        logging_dir='./logs',
+        logging_steps=400,
+        report_to='wandb',
+        run_name=RUN_NAME
+    )
+    
+    # train & validation phase
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=RE_train_dataset,
+        train_dataset=train_dataset,
+        eval_dataset=valid_dataset,
+        compute_metrics=compute_metrics,
     )
 
     trainer.train()
+    wandb.finish()
 
 
-def main(args):
-    """
-        주어진 dataset tsv 파일과 같은 형태일 경우 inference 가능한 코드입니다.
-    """
-    # train()
-    
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    # load tokenizer
-    TOK_NAME = "bert-base-multilingual-cased"  
-    tokenizer = AutoTokenizer.from_pretrained(TOK_NAME)
+if __name__ == "__main__":
+    TIMESTAMP = get_timestamp()  # used as an identifier in model save phase
+    LOAD_STATE_DICT = None
 
-    # load my model
-    MODEL_NAME = args.model_dir # model dir.
-    model = BertForSequenceClassification.from_pretrained(args.model_dir)
-    model.parameters
-    model.to(device)
-
-    # load test datset
-    test_dataset_dir = "./input/data/test/test.tsv"
-    test_dataset, test_label = load_test_dataset(test_dataset_dir, tokenizer)
-    test_dataset = RE_Dataset(test_dataset ,test_label)
-
-    # predict answer
-    pred_answer = inference(model, test_dataset, device)
-    # make csv file with predicted answer
-    # 아래 directory와 columns의 형태는 지켜주시기 바랍니다.
-
-    output = pd.DataFrame(pred_answer, columns=['pred'])
-    output.to_csv('./predictions/submission.csv', index=False)
-
-if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_dir', type=str, default="./result/checkpoint-8000")
+    parser.add_argument("--model-type", type=str, default=ModelType.XLMSequenceClfL)
+    parser.add_argument(
+        "--pretrained-type", type=str, default=PreTrainedType.XLMRobertaL
+    )
+    parser.add_argument("--num-classes", type=int, default=Config.NumClasses)
+    parser.add_argument("--pooler-idx", type=int, default=0)
+    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--load-state-dict", type=str, default=LOAD_STATE_DICT)
+    parser.add_argument("--data-root", type=str, default=Config.TrainMulti5)
+    parser.add_argument("--preprocess-type", type=str, default=PreProcessType.ES)
+    parser.add_argument("--epochs", type=int, default=Config.Epochs)
+    parser.add_argument("--valid-size", type=int, default=0.1)
+    parser.add_argument("--train-batch-size", type=int, default=Config.Batch32)
+    parser.add_argument("--valid-batch-size", type=int, default=512)
+    parser.add_argument("--optim-type", type=str, default=Optimizer.AdamW)
+    parser.add_argument("--loss-type", type=str, default=Loss.CE)
+    parser.add_argument("--lr", type=float, default=Config.LRRoberta)
+    parser.add_argument("--lr-scheduler", type=str, default=Optimizer.LinearWarmUp)
+    parser.add_argument("--device", type=str, default=Config.Device)
+    parser.add_argument("--seed", type=int, default=Config.Seed)
+    parser.add_argument("--save-path", type=str, default=Config.CheckPoint)
+
     args = parser.parse_args()
+
+    # register logs to wandb
+    RUN_NAME = (
+        TIMESTAMP + "_" + args.model_type
+    )  # save file name: [MODEL-TYPE]_[PRETRAINED-TYPE]_[EPOCH][ACC][LOSS][ID].pth
+    run = wandb.init(
+        project="pstage-klue", 
+        name=RUN_NAME, 
+        tags=[args.model_type, os.path.basename(args.pretrained_type), str(args.num_classes)],
+        group=args.model_type
+        )
+    wandb.config.update(args)
+
+    # make checkpoint directory to save model during train
+    checkpoint_dir = f"{os.path.basename(args.model_type)}_{os.path.basename(args.pretrained_type)}_{TIMESTAMP}"
+    if checkpoint_dir not in os.listdir(args.save_path):
+        os.mkdir(os.path.join(args.save_path, checkpoint_dir))
+    args.save_path = os.path.join(args.save_path, checkpoint_dir)
+
+    # save param dict
+    save_param = vars(args)
+    save_param['device'] = save_param['device'].type
+    save_json(os.path.join(args.save_path, 'param_dict.json'), save_param)
+
+    print("=" * 100)
     print(args)
-    main(args)
+    print("=" * 100)
+    train(**vars(args))
+
+    run.finish() # finish wandb's session
