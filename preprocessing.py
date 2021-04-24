@@ -6,7 +6,8 @@ ENTITY_COLS = ["e1_start", "e1_end", "e2_start", "e2_end"]
 POS = ["NNG", "NNP", "NNB", "NNBC", "NR", "NP", "VV", "VA", "XR"]
 
 
-def preprocess_text(data: pd.DataFrame, model_type: str=ModelType.XLMSequenceClf, method: str = PreProcessType.Base):
+
+def preprocess_text(data: pd.DataFrame, model_type: str=ModelType.XLMSequenceClf, preprocess_type: str = PreProcessType.Base):
     """Preprocessing 방법에 따라 텍스트를 전처리하는 함수.
     텍스트 전처리 결과는 'input' 컬럼으로 추가됨
     이후 토크나이저는 'input' 컬럼에 대해 토크나이징하도록 설정!
@@ -18,13 +19,14 @@ def preprocess_text(data: pd.DataFrame, model_type: str=ModelType.XLMSequenceClf
     Returns:
         pd.DataFrame: 전처리 타입에 맞게 처리된 데이터프레임
     """
-    if method == PreProcessType.Base:
+    print(f"Preprocess sentencses '{preprocess_type}'")
+    if preprocess_type == PreProcessType.Base:
         data["input"] = data["relation_state"]
         return data
 
     # 기존 제시문 -> [개체1][SEP][개체2][SEP][기존 제시문]
-    elif method in [PreProcessType.ES, PreProcessType.ESP]:
-        if model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase]:
+    elif preprocess_type in [PreProcessType.ES, PreProcessType.ESP]:
+        if model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase, ModelType.XLMSequenceClfL]:
             data["input"] = (
                 ST.SOpen + data["e1"] + ST.SClose + data["e2"] + ST.SClose + data["relation_state"]
             )
@@ -34,14 +36,14 @@ def preprocess_text(data: pd.DataFrame, model_type: str=ModelType.XLMSequenceClf
             )
     
     # [개체 각각 스페셜토큰이 부착된 제시문]
-    elif method == PreProcessType.EM:
+    elif preprocess_type == PreProcessType.EM:
         data["input"] = data.apply(lambda x: attach_entities(x), axis=1)
         return data
 
     # [개체1][SEP][개체2][SEP][개체 각각 스페셜토큰이 부착된 제시문]
-    elif method == PreProcessType.EMSP:
+    elif preprocess_type == PreProcessType.EMSP:
         data["input"] = data.apply(lambda x: attach_entities(x), axis=1)
-        if model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase]:
+        if model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase, ModelType.XLMSequenceClf, ModelType.XLMSequenceClfL]:
             data["input"] = (
                 ST.SOpen + data["e1"] + ST.SClose + data["e2"] + ST.SClose + data["relation_state"]
             )
@@ -50,7 +52,7 @@ def preprocess_text(data: pd.DataFrame, model_type: str=ModelType.XLMSequenceClf
                 data["e1"] + ST.SEP + data["e2"] + ST.SEP + data["input"]
             )
     else:
-        raise NotImplementedError(f"There's no method for '{method}'")
+        raise NotImplementedError(f"There's no method for '{preprocess_type}'")
     
     return data
 
