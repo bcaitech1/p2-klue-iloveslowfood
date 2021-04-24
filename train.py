@@ -1,3 +1,5 @@
+"""torch 활용 학습 시 사용되는 모듈"""
+
 import argparse
 import os
 import warnings
@@ -9,7 +11,7 @@ from transformers import get_linear_schedule_with_warmup
 import wandb
 from evaluation import evaluate
 from models import load_model
-from dataset import REDataset, REDataset, split_train_test_loader, LabelEncoder
+from dataset import REDataset, REDataset, split_train_test_loader
 from optimizers import get_optimizer, get_scheduler
 from criterions import get_criterion
 from utils import get_timestamp, get_timestamp, set_seed, verbose, ckpt_name, save_json
