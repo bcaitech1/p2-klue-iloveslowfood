@@ -5,13 +5,10 @@ from transformers import (
     BertConfig,
     BertForSequenceClassification,
     ElectraModel,
-    ElectraConfig,
     XLMRobertaForSequenceClassification,
     XLMRobertaConfig,
-    RobertaModel,
 )
 from config import ModelType, Config, ModelType, PreTrainedType
-from dataset import REDataset, split_train_test_loader
 
 
 def load_model(
@@ -41,21 +38,32 @@ def load_model(
 
     # BertModel
     if model_type == ModelType.BertBase:
-        bert_config = BertConfig.from_pretrained(pretrained_type)
-        bert_config.num_labels = num_classes
-        model = BertModel.from_pretrained(pretrained_type, config=bert_config)
+        if load_state_dict is not None:
+            model = BertModel.from_pretrained(load_state_dict)
+        
+        else:
+            bert_config = BertConfig.from_pretrained(pretrained_type)
+            bert_config.num_labels = num_classes
+            model = BertModel.from_pretrained(pretrained_type, config=bert_config)
     
     # XLM Roberta Base
     elif model_type == ModelType.XLMSequenceClf:
-        config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRoberta)
-        config.num_labels = num_classes
-        model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRoberta, config=config)
+        if load_state_dict is not None:
+            model = XLMRobertaForSequenceClassification.from_pretrained(load_state_dict)
+        else:
+            config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRoberta)
+            config.num_labels = num_classes
+            model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRoberta, config=config)
     
     # XLM Roberta Large
     elif model_type == ModelType.XLMSequenceClfL:
-        config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRobertaL)
-        config.num_labels = num_classes
-        model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRobertaL, config=config)
+        if load_state_dict is not None:
+            model = XLMRobertaForSequenceClassification.from_pretrained(load_state_dict)
+        else:
+            config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRobertaL)
+            config.num_labels = num_classes
+            model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRobertaL, config=config)
+            
 
     # Bert for Sequence Classification
     elif model_type == ModelType.BertSequenceClf:
