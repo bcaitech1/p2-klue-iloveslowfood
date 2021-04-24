@@ -1,10 +1,20 @@
 from torch import nn, optim
 from adamp import AdamP
-from transformers import AdamW, get_linear_schedule_with_warmup
+from transformers import AdamW
 from config import Optimizer
 
 
 def get_optimizer(model: nn.Module, type: str, lr: float):
+    """설정에 맞는 최적화 함수를 리턴
+
+    Args:
+        model (nn.Module): 업데이트 할 weight를 지닌 모델
+        type (str): 불러올 최적화 함수 타입
+        lr (float): learning rate
+
+    Returns:
+        optim: 최적화 함수
+    """    
     if type == Optimizer.Adam:
         optimizer = optim.Adam(model.parameters(), lr=lr)
     elif type == Optimizer.SGD:

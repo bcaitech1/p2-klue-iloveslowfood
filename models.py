@@ -1,16 +1,13 @@
-import torch
 from torch import nn
 from transformers import (
     BertModel,
     BertConfig,
     BertForSequenceClassification,
     ElectraModel,
-    ElectraConfig,
-    RobertaForSequenceClassification,
-    RobertaModel,
+    XLMRobertaForSequenceClassification,
+    XLMRobertaConfig,
 )
 from config import ModelType, Config, ModelType, PreTrainedType
-from dataset import REDataset, split_train_test_loader
 
 
 def load_model(
@@ -21,32 +18,79 @@ def load_model(
     pooler_idx: int = 0,  # get last hidden state from CLS
     dropout: float = 0.5,
 ):
+    """설정에 맞는 모델을 리턴하는 함수. HuggingFace의 transformers 라이브러리를 바탕으로 둠
+
+    Args:
+        model_type (str, optional): 불러올 모델 아키텍쳐. Defaults to ModelType.SequenceClf.
+        pretrained_type (str, optional): 불러올 사전 학습 파라미터. Defaults to PreTrainedType.MultiLingual.
+        num_classes (int, optional): 분류할 카테고리 수. Defaults to Config.NumClasses.
+        load_state_dict (str, optional): 사전 학습한 파라미터를 불러올 경우 해당 경로를 입력. Defaults to None.
+        pooler_idx (int, optional):
+            마지막 hidden state의 몇 번째 벡터를 가져올 지 설정 0으로 설정할 경우 [CLS] 토큰에 대한 hidden state를 추출.
+            VanillaBert, VanillaBert_v2에만 적용 가능. Defaults to 0.
+
+    Returns:
+        model(torch.nn): 학습에 활용할 모델
+    """    
     print("Load Model...", end="\t")
     # make BERT configuration
 
-    # load pre-trained model
-    if model_type == ModelType.Base:
-        bert_config = BertConfig.from_pretrained(pretrained_type)
-        bert_config.num_labels = num_classes
-        model = BertModel.from_pretrained(pretrained_type, config=bert_config)
+    # BertModel
+    if model_type == ModelType.BertBase:
+        if load_state_dict is not None:
+            model = BertModel.from_pretrained(load_state_dict)
+        
+        else:
+            bert_config = BertConfig.from_pretrained(pretrained_type)
+            bert_config.num_labels = num_classes
+            model = BertModel.from_pretrained(pretrained_type, config=bert_config)
+    
+    # XLM Roberta Base
+    elif model_type == ModelType.XLMSequenceClf:
+        if load_state_dict is not None:
+            model = XLMRobertaForSequenceClassification.from_pretrained(load_state_dict)
+        else:
+            config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRoberta)
+            config.num_labels = num_classes
+            model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRoberta, config=config)
+    
+    # XLM Roberta Large
+    elif model_type == ModelType.XLMSequenceClfL:
+        if load_state_dict is not None:
+            model = XLMRobertaForSequenceClassification.from_pretrained(load_state_dict)
+        else:
+            config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRobertaL)
+            config.num_labels = num_classes
+            model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRobertaL, config=config)
+            
 
-    elif model_type == ModelType.SequenceClf:
-        bert_config = BertConfig.from_pretrained(pretrained_type)
-        bert_config.num_labels = num_classes
-        model = BertForSequenceClassification.from_pretrained(
-            pretrained_type, config=bert_config
-        )
+    # Bert for Sequence Classification
+    elif model_type == ModelType.BertSequenceClf:
+        if load_state_dict is not None:
+            print(f'Load params from {load_state_dict}...', end='\t')
+            model = BertForSequenceClassification.from_pretrained(
+                pretrained_model_name_or_path=load_state_dict
+                )
+            print('done!')
+
+        else:
+            bert_config = BertConfig.from_pretrained(pretrained_type)
+            bert_config.num_labels = num_classes
+            model = BertForSequenceClassification.from_pretrained(
+                pretrained_type, config=bert_config
+            )
 
     elif model_type == ModelType.VanillaBert:
         bert_config = BertConfig.from_pretrained(pretrained_type)
         bert_config.num_labels = num_classes
         model = VanillaBert(
-            model_type=ModelType.SequenceClf,
+            model_type=ModelType.BertSequenceClf,
             pretrained_type=pretrained_type,
             num_labels=num_classes,
             pooler_idx=pooler_idx,
             dropout=dropout,
         )
+
     elif model_type == ModelType.VanillaBert_v2:
         bert_config = BertConfig.from_pretrained(pretrained_type)
         bert_config.num_labels = num_classes
@@ -59,78 +103,17 @@ def load_model(
     elif model_type == ModelType.KoELECTRAv3:
         model = VanillaKoElectra(num_classes=num_classes)
 
-    elif model_type == ModelType.XLMBase:
-        model = VanillaXLMBase(num_classes=num_classes)
-
-    elif model_type == ModelType.XLMSequenceClf:
-        model = VanillaXLMSeqClf(num_classes=num_classes)
-
+    
+    elif model_type == ModelType.XLMSequenceClfL:
+        config = XLMRobertaConfig.from_pretrained(model_type)
+        config.num_labels = num_classes
+        model = XLMRobertaForSequenceClassification.from_pretrained(model_type, config=config)
+        
     else:
         raise NotImplementedError()
 
-    if load_state_dict is not None:
-        model.load_state_dict(torch.load(load_state_dict))
-        print(f"Loaded pretrained weights from {load_state_dict}", end="\t")
-
     print("done!")
     return model
-
-
-class VanillaXLMSeqClf(nn.Module):
-    def __init__(self, num_classes):
-        super(VanillaXLMSeqClf, self).__init__()
-        self.backbone = RobertaForSequenceClassification.from_pretrained(
-            PreTrainedType.XLMRoberta
-        )
-        self.backbone.classifier.out_proj = nn.Linear(
-            in_features=768, out_features=num_classes, bias=True
-        )
-
-    def forward(self, input_ids, attention_mask):
-        output = self.backbone(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-        )
-        return output
-
-    def resize_token_embeddings(self, new_num_tokens: int):
-        self.backbone.resize_token_embeddings(new_num_tokens)
-
-
-class VanillaXLMLarge(nn.Module):
-    def __init__(self, num_classes):
-        super(VanillaXLMLarge, self).__init__()
-        self.backbone = RobertaModel.from_pretrained(PreTrainedType.XLMRoberta)
-        self.linear = nn.Linear(in_features=768, out_features=num_classes)
-
-    def forward(self, input_ids, attention_mask):
-        x = self.backbone(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-        )
-        output = self.linear(x)
-        return output
-
-    def resize_token_embeddings(self, new_num_tokens: int):
-        self.backbone.resize_token_embeddings(new_num_tokens)
-
-
-class VanillaXLMBase(nn.Module):
-    def __init__(self, num_classes):
-        super(VanillaXLMBase, self).__init__()
-        self.backbone = RobertaModel.from_pretrained(PreTrainedType.XLMRoberta)
-        self.linear = nn.Linear(in_features=768, out_features=num_classes)
-
-    def forward(self, input_ids, attention_mask):
-        x = self.backbone(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-        )
-        output = self.linear(x)
-        return output
-
-    def resize_token_embeddings(self, new_num_tokens: int):
-        self.backbone.resize_token_embeddings(new_num_tokens)
 
 
 class VanillaKoBert(nn.Module):
@@ -157,18 +140,18 @@ class VanillaKoBert(nn.Module):
 class VanillaKoElectra(nn.Module):
     def __init__(self, num_classes, pooler_idx: int = 0):
         super(VanillaKoElectra, self).__init__()
-        config = ElectraConfig.from_pretrained(PreTrainedType.KoELECTRAv3)
         self.backbone = ElectraModel.from_pretrained(
-            PreTrainedType.KoELECTRAv3, config=config
+            PreTrainedType.KoELECTRAv3
         )
         self.linear = nn.Linear(in_features=768, out_features=num_classes)
         self.idx = pooler_idx
 
-    def forward(self, input_ids, token_type_ids, attention_mask):
+    def forward(self, input_ids, token_type_ids, attention_mask, labels):
         x = self.backbone(
             input_ids=input_ids,
             token_type_ids=token_type_ids,
             attention_mask=attention_mask,
+            labels=labels
         )
         x = x.last_hidden_state[:, self.idx, :]
         output = self.linear(x)
@@ -268,10 +251,11 @@ class VanillaBert(nn.Module):
         return model
 
 
+# for debugging
 if __name__ == "__main__":
-    dataset = REDataset()
-    train_loader, valid_loader = split_train_test_loader(dataset)
-    model = VanillaBert().cuda()
-    for sents, labels in train_loader:
-        break
-    model(**sents)
+    model = load_model(
+        model_type=ModelType.SequenceClf,
+        pretrained_type=PreTrainedType.MultiLingual,
+        num_classes=Config.Num41,
+        load_state_dict='./saved_models/BertForSequenceClassification_bert-base-multilingual-cased_20210421122305/checkpoint-1000/'
+        )
