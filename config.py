@@ -1,15 +1,5 @@
-import os
 from dataclasses import dataclass
 import torch
-
-
-TEST = "./input/data/test/test.tsv"
-LABEL = "./input/data/label_type.pkl"
-LABEL41 = "./input/data/label_type41.pkl"
-LOGS = "./logs"
-CKPT = "./saved_models"
-
-DOT = "."
 
 
 @dataclass
@@ -19,9 +9,9 @@ class Config:
     """
 
     ValidSize: float = 0.1
-    Label: str = LABEL if os.path.isfile(LABEL) else DOT + LABEL
-    Label41: str = LABEL41 if os.path.isfile(LABEL41) else DOT + LABEL41
-    Logs: str = LOGS if os.path.isfile(LOGS) else DOT + LOGS
+    Label: str = "./input/data/label_type.pkl"
+    Label41: str = "./input/data/label_type41.pkl"
+    Logs: str = "./logs"
     NumClasses: int = 42
     NumBinary: int = 2
     Num41: int = 41
@@ -144,10 +134,13 @@ class PreProcessType:
 
 @dataclass
 class ModelType:
+    BertBase: str = "BertModel"
+    BertSequenceClf: str = "BertForSequenceClassification"
+    
     VanillaBert: str = "VanillaBert"
     VanillaBert_v2: str = "VanillaBert_v2"
-    Base: str = "BertModel"
-    SequenceClf: str = "BertForSequenceClassification"
+    
+    
     KoELECTRAv3: str = "KoELECTRAv3"
     KoBert: str = "monologg/kobert"
 
