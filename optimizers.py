@@ -14,7 +14,7 @@ def get_optimizer(model: nn.Module, type: str, lr: float):
 
     Returns:
         optim: 최적화 함수
-    """    
+    """
     if type == Optimizer.Adam:
         optimizer = optim.Adam(model.parameters(), lr=lr)
     elif type == Optimizer.SGD:

@@ -47,7 +47,12 @@ def train(
     set_seed(seed)
 
     # load data
-    dataset = REDataset(root=data_root, model_type=model_type, preprocess_type=preprocess_type, device=device)
+    dataset = REDataset(
+        root=data_root,
+        model_type=model_type,
+        preprocess_type=preprocess_type,
+        device=device,
+    )
 
     # 학습 데이터를 분리하지 않을 경우
     if valid_size == 0:
@@ -83,7 +88,9 @@ def train(
                 type=lr_scheduler, optimizer=optimizer, num_training_steps=TOTAL_STEPS
             )
         else:
-            scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=len(train_loader))
+            scheduler = get_linear_schedule_with_warmup(
+                optimizer, num_warmup_steps=0, num_training_steps=len(train_loader)
+            )
 
     # train phase
     best_acc = 0
@@ -98,17 +105,19 @@ def train(
 
         for sentences, labels in tqdm(train_loader, desc="[Train]"):
             if model_type in [ModelType.SequenceClf]:
-                input_ids = sentences['input_ids']
-                token_type_ids = sentences['token_type_ids']
-                attention_mask = sentences['attention_mask']
-                loss, outputs = model(input_ids, token_type_ids, attention_mask, labels=labels).values()
+                input_ids = sentences["input_ids"]
+                token_type_ids = sentences["token_type_ids"]
+                attention_mask = sentences["attention_mask"]
+                loss, outputs = model(
+                    input_ids, token_type_ids, attention_mask, labels=labels
+                ).values()
             else:
                 if model_type == ModelType.XLMSequenceClf:
                     outputs = model(**sentences).logits
                 else:
                     outputs = model(**sentences)
                 loss = criterion(outputs, labels)
-                
+
             total_loss += loss.item()
 
             # backpropagation
@@ -154,7 +163,6 @@ def train(
         train_eval = evaluate(y_true=true_arr, y_pred=pred_arr)  # ACC, F1, PRC, REC
         train_loss = total_loss / len(train_loader)
 
-        
         # logs for each epoch of train, valid both
         if is_valid:  # when train set splited to train/valid
             # validation phase
@@ -255,17 +263,19 @@ def validate(model, model_type, valid_loader, num_classes, criterion):
     with torch.no_grad():
         for sentences, labels in tqdm(valid_loader, desc="[Valid]"):
             if model_type in [ModelType.SequenceClf]:
-                input_ids = sentences['input_ids']
-                token_type_ids = sentences['token_type_ids']
-                attention_mask = sentences['attention_mask']
-                loss, outputs = model(input_ids, token_type_ids, attention_mask, labels=labels).values()
+                input_ids = sentences["input_ids"]
+                token_type_ids = sentences["token_type_ids"]
+                attention_mask = sentences["attention_mask"]
+                loss, outputs = model(
+                    input_ids, token_type_ids, attention_mask, labels=labels
+                ).values()
             else:
                 if model_type == ModelType.XLMSequenceClf:
                     outputs = model(**sentences).logits
                 else:
                     outputs = model(**sentences)
                 loss = criterion(outputs, labels)
-                
+
             total_loss += loss.item()
 
             _, preds = torch.max(outputs, dim=1)
@@ -289,10 +299,10 @@ def validate(model, model_type, valid_loader, num_classes, criterion):
                 probs=None,
                 y_true=true_arr,
                 preds=pred_arr,
-                class_names=[i for i in range(num_classes)]
-                )
-                }
-                )
+                class_names=[i for i in range(num_classes)],
+            )
+        }
+    )
 
     model.train()
 
@@ -329,7 +339,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.model_type in [ModelType.SequenceClf, ModelType.KoELECTRAv3]:
         args.loss_type = Loss.CE
-    if args.model_type in [ModelType.SequenceClf, ModelType.KoELECTRAv3, ModelType.XLMBase, ModelType.XLMSequenceClf]:
+    if args.model_type in [
+        ModelType.SequenceClf,
+        ModelType.KoELECTRAv3,
+        ModelType.XLMBase,
+        ModelType.XLMSequenceClf,
+    ]:
         args.dropout = None
 
     # register logs to wandb
@@ -347,8 +362,8 @@ if __name__ == "__main__":
 
     # save param dict
     save_param = vars(args)
-    save_param['device'] = save_param['device'].type
-    save_json(os.path.join(args.save_path, 'param_dict.json'), save_param)
+    save_param["device"] = save_param["device"].type
+    save_json(os.path.join(args.save_path, "param_dict.json"), save_param)
 
     # train
     TOTAL_STEPS = args.epochs * (

@@ -10,10 +10,7 @@ from transformers.utils import logging
 logger = logging.get_logger(__name__)
 from config import Config, ModelType, PreProcessType
 from utils import load_pickle
-from tokenization import (
-    load_tokenizer,
-    tokenize
-)
+from tokenization import load_tokenizer, tokenize
 from preprocessing import preprocess_text
 
 
@@ -30,7 +27,6 @@ COLUMNS = [
 ]
 
 
-
 def load_data(
     root: str, drop_id: bool = True, encode_label: bool = True
 ) -> pd.DataFrame:
@@ -44,9 +40,9 @@ def load_data(
     Returns:
         pd.DataFrame: 적어도 relation state, entity1/entity2 텍스트와 위치, 레이블이 포함된 데이터프레임
     """
-    if 'preprocess' in root:
+    if "preprocess" in root:
         return pd.read_csv(root)
-    
+
     data = pd.read_csv(root, sep="\t", header=None, names=COLUMNS)
 
     # drop 'id' column
@@ -63,23 +59,27 @@ def load_data(
 
 # TODO: REDataset_trainer와 REDatatset은 굳이 나눌 필요가 없음. 대회 동안 구현을 비효율적으로 했을 뿐, 하나로 묶어줄 필요가 있음
 class REDatasetForTrainer(Dataset):
-    """transformers의 Trainer를 활용한 학습에 활용되는 데이터셋"""    
+    """transformers의 Trainer를 활용한 학습에 활용되는 데이터셋"""
+
     def __init__(self, tokenized_dataset, labels):
         self.tokenized_dataset = tokenized_dataset
         self.labels = labels
-    
+
     def __getitem__(self, idx):
-        item = {key: torch.as_tensor(val[idx]) for key, val in self.tokenized_dataset.items()}
-        item['labels'] = torch.as_tensor(self.labels[idx])
+        item = {
+            key: torch.as_tensor(val[idx])
+            for key, val in self.tokenized_dataset.items()
+        }
+        item["labels"] = torch.as_tensor(self.labels[idx])
         return item
 
     def __len__(self):
         return len(self.labels)
-    
 
 
 class REDataset(Dataset):
-    """torch를 활용한 학습에 활용되는 데이터셋"""    
+    """torch를 활용한 학습에 활용되는 데이터셋"""
+
     def __init__(
         self,
         root: str = Config.Train,
@@ -87,12 +87,14 @@ class REDataset(Dataset):
         preprocess_type: str = PreProcessType.EM,
         device: str = Config.Device,
     ):
-        self.data = self._load_data(root, model_type=model_type, preprocess_type=preprocess_type)
-        self.labels = self.data["label"].tolist()
-        self.tokenizer = load_tokenizer(model_type=model_type, preprocess_type=preprocess_type)
-        self.inputs = tokenize(
-            self.data, self.tokenizer, model_type, preprocess_type
+        self.data = self._load_data(
+            root, model_type=model_type, preprocess_type=preprocess_type
         )
+        self.labels = self.data["label"].tolist()
+        self.tokenizer = load_tokenizer(
+            model_type=model_type, preprocess_type=preprocess_type
+        )
+        self.inputs = tokenize(self.data, self.tokenizer, model_type, preprocess_type)
         self.device = device
 
     def __getitem__(self, idx) -> Tuple[Dict[str, torch.Tensor], torch.Tensor]:
@@ -112,9 +114,9 @@ class REDataset(Dataset):
         print(f"Getting dataset for {model_type}...")
         print("Load raw data...", end="\t")
 
-        if 'preprocessed' in root:
+        if "preprocessed" in root:
             raw = pd.read_csv(root)
-        else: # load raw data
+        else:  # load raw data
             enc = LabelEncoder()
             raw = pd.read_csv(root, sep="\t", header=None)
             raw.columns = COLUMNS
@@ -128,7 +130,6 @@ class REDataset(Dataset):
         print("done!")
 
         return data
-
 
 
 def split_train_test_loader(
@@ -169,7 +170,7 @@ def split_train_test_loader(
     # train loader
     train_indices = indices[num_test:]
     train_sampler = SubsetRandomSampler(train_indices)
-    
+
     if drop_last:
         train_loader = DataLoader(
             dataset, sampler=train_sampler, batch_size=train_batch_size, drop_last=True
@@ -190,7 +191,8 @@ def split_train_test_loader(
 
 
 class LabelEncoder:
-    """'관계_없음' 등의 문자열 레이블을 정수형으로 인코딩하거나, 정수형 레이블을 문자열 레이블로 디코딩하는 클래스"""    
+    """'관계_없음' 등의 문자열 레이블을 정수형으로 인코딩하거나, 정수형 레이블을 문자열 레이블로 디코딩하는 클래스"""
+
     def __init__(self):
         self.encoder = load_pickle(Config.Label)
         self.decoder = {j: i for j, i in self.encoder.items()}
@@ -205,7 +207,8 @@ class LabelEncoder:
 
 
 class LabelEncoder41:
-    """LabelEncoder와 역할은 같지만, 41가지 카테고리('관계_없음' 제외) 학습 시 활용되는 인코더/디코더 클래스"""    
+    """LabelEncoder와 역할은 같지만, 41가지 카테고리('관계_없음' 제외) 학습 시 활용되는 인코더/디코더 클래스"""
+
     def __init__(self):
         self.encoder = load_pickle(Config.Label41)
         self.decoder = {j: i for j, i in self.encoder.items()}
@@ -215,8 +218,6 @@ class LabelEncoder41:
 
     def inverse_transform(self, x):
         return self.decoder[x]
-
-
 
 
 # just for debug

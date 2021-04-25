@@ -12,7 +12,7 @@ def get_criterion(type: str = Loss.CE):
 
     Returns:
         torch.nn: loss 함수
-    """    
+    """
     if type == Loss.CE:
         criterion = nn.CrossEntropyLoss()
     elif type == Loss.LS:

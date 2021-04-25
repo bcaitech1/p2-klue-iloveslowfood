@@ -2,7 +2,12 @@ from tqdm import tqdm
 from dataclasses import dataclass
 import pandas as pd
 import torch
-from transformers import BertTokenizer, ElectraTokenizer, RobertaTokenizer, XLMRobertaTokenizer
+from transformers import (
+    BertTokenizer,
+    ElectraTokenizer,
+    RobertaTokenizer,
+    XLMRobertaTokenizer,
+)
 from config import ModelType, PreProcessType, PreTrainedType
 
 # 토큰화 결과 [CLS] 토큰이 가장 앞에 붙게 되기 떄문에
@@ -32,7 +37,9 @@ class SpecialToken:
     E2Close: str = "[/E2]"
 
 
-def load_tokenizer(model_type: str = ModelType.KoELECTRAv3, preprocess_type: str = PreProcessType.Base):
+def load_tokenizer(
+    model_type: str = ModelType.KoELECTRAv3, preprocess_type: str = PreProcessType.Base
+):
     """사전 학습된 tokenizer를 불러오는 함수
     Args
     ---
@@ -43,8 +50,16 @@ def load_tokenizer(model_type: str = ModelType.KoELECTRAv3, preprocess_type: str
     - tokenizer(BertTokenizer): 사전 학습된 tokenizer
     """
     print(f"Load Tokenizer for {preprocess_type}...", end="\t")
-    if model_type in [ModelType.SequenceClf, ModelType.VanillaBert, ModelType.VanillaBert_v2]:
-        if preprocess_type in [PreProcessType.Base, PreProcessType.ES, PreProcessType.ESP]:
+    if model_type in [
+        ModelType.SequenceClf,
+        ModelType.VanillaBert,
+        ModelType.VanillaBert_v2,
+    ]:
+        if preprocess_type in [
+            PreProcessType.Base,
+            PreProcessType.ES,
+            PreProcessType.ESP,
+        ]:
             tokenizer = BertTokenizer.from_pretrained(PreTrainedType.MultiLingual)
 
         # Entity Marker, Entity Marker Separator with Position Embedding
@@ -64,7 +79,11 @@ def load_tokenizer(model_type: str = ModelType.KoELECTRAv3, preprocess_type: str
             raise NotImplementedError
 
     elif model_type == ModelType.KoELECTRAv3:
-        if preprocess_type in [PreProcessType.Base, PreProcessType.ES, PreProcessType.ESP]:
+        if preprocess_type in [
+            PreProcessType.Base,
+            PreProcessType.ES,
+            PreProcessType.ESP,
+        ]:
             tokenizer = ElectraTokenizer.from_pretrained(PreTrainedType.KoELECTRAv3)
 
         # Entity Marker, Entity Marker Separator with Position Embedding
@@ -84,7 +103,11 @@ def load_tokenizer(model_type: str = ModelType.KoELECTRAv3, preprocess_type: str
             raise NotImplementedError
 
     elif model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase]:
-        if preprocess_type in [PreProcessType.Base, PreProcessType.ES, PreProcessType.ESP]:
+        if preprocess_type in [
+            PreProcessType.Base,
+            PreProcessType.ES,
+            PreProcessType.ESP,
+        ]:
             tokenizer = RobertaTokenizer.from_pretrained(PreTrainedType.XLMRoberta)
 
         # Entity Marker, Entity Marker Separator with Position Embedding
@@ -101,10 +124,14 @@ def load_tokenizer(model_type: str = ModelType.KoELECTRAv3, preprocess_type: str
                 }
             )
     elif model_type == ModelType.XLMSequenceClfL:
-        if preprocess_type in [PreProcessType.Base, PreProcessType.ES, PreProcessType.ESP]:
+        if preprocess_type in [
+            PreProcessType.Base,
+            PreProcessType.ES,
+            PreProcessType.ESP,
+        ]:
             print("XLMRobertaTokenizer")
             tokenizer = XLMRobertaTokenizer.from_pretrained(PreTrainedType.XLMRobertaL)
-            
+
         # Entity Marker, Entity Marker Separator with Position Embedding
         elif preprocess_type in [PreProcessType.EM, PreProcessType.EMSP]:
             tokenizer = RobertaTokenizer.from_pretrained(PreTrainedType.XLMRoberta)
@@ -133,16 +160,22 @@ def tokenize(data: pd.DataFrame, tokenizer):
         max_length=MAX_LENGTH,
         add_special_tokens=True,
     )
-    print('done!')
-    
+    print("done!")
+
     return data_tokenized
 
 
 def find_sep_intervals(tokenized: list, model_type: str) -> list:
     if model_type in [ModelType.XLMSequenceClf, ModelType.XLMBase]:
-        sep_indices = tuple(idx for idx, tok in enumerate(tokenized) if tok in [SpecialToken.SOpen, SpecialToken.SClose])
+        sep_indices = tuple(
+            idx
+            for idx, tok in enumerate(tokenized)
+            if tok in [SpecialToken.SOpen, SpecialToken.SClose]
+        )
     else:
-        sep_indices = tuple(idx for idx, tok in enumerate(tokenized) if tok == SpecialToken.SEP)
+        sep_indices = tuple(
+            idx for idx, tok in enumerate(tokenized) if tok == SpecialToken.SEP
+        )
 
     return sep_indices
 
@@ -150,32 +183,38 @@ def find_sep_intervals(tokenized: list, model_type: str) -> list:
 def find_entity_intervals(tokenized: list) -> dict:
     entity_intervals = [
         (tokenized.index(SpecialToken.E1Open), tokenized.index(SpecialToken.E1Close)),
-        (tokenized.index(SpecialToken.E2Open), tokenized.index(SpecialToken.E2Close))
+        (tokenized.index(SpecialToken.E2Open), tokenized.index(SpecialToken.E2Close)),
     ]
 
     return entity_intervals
 
-def make_additional_token_type_ids(intervals: list, data_size: int, type: str='entity'):
+
+def make_additional_token_type_ids(
+    intervals: list, data_size: int, type: str = "entity"
+):
     n_rows = data_size
     n_cols = MAX_LENGTH
     additional_token_type_ids = torch.zeros(n_rows, n_cols)
 
-    if type == 'entity':
+    if type == "entity":
         for idx, (e1, e2) in tqdm(enumerate(intervals), desc="Update token_type_ids"):
-            additional_token_type_ids[idx][OFFSET+e1[0]: OFFSET+e1[1]+1] += ENTITY_SCORE
-            additional_token_type_ids[idx][OFFSET+e2[0]: OFFSET+e2[1]+1] += ENTITY_SCORE
+            additional_token_type_ids[idx][
+                OFFSET + e1[0] : OFFSET + e1[1] + 1
+            ] += ENTITY_SCORE
+            additional_token_type_ids[idx][
+                OFFSET + e2[0] : OFFSET + e2[1] + 1
+            ] += ENTITY_SCORE
 
-    elif type == 'sep':
+    elif type == "sep":
         for idx, sep in tqdm(enumerate(intervals), desc="Update token_type_ids"):
             last_sep = sep[-1]
-            additional_token_type_ids[idx][OFFSET: OFFSET+last_sep+1] += SEP_SCORE
-            additional_token_type_ids[idx][OFFSET: OFFSET+last_sep+1] += SEP_SCORE
-            
+            additional_token_type_ids[idx][OFFSET : OFFSET + last_sep + 1] += SEP_SCORE
+            additional_token_type_ids[idx][OFFSET : OFFSET + last_sep + 1] += SEP_SCORE
+
     return additional_token_type_ids
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     tokenizer = load_tokenizer(PreProcessType.ES)
-    sentence = '영국에서 사용되는 스포츠 유틸리티 [E2]자동차[/E2]의 브랜드로는 [E1]랜드로버[/E1](Land Rover)와 지프(Jeep)가 있으며, 이 브랜드들은 자동차의 종류를 일컫는 말로 사용되기도 한다.'
+    sentence = "[E1]이순신[/E1]은 조선 중기의 [E1]무신[/E1]이다."
     tokenize(sentence, tokenizer, PreProcessType.ES)

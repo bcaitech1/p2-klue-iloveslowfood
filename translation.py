@@ -1,3 +1,5 @@
+__author__ = 'taehwakkwon' # https://github.com/taehwakkwon/papago-translator
+
 import argparse
 from copy import deepcopy
 import os
@@ -62,16 +64,14 @@ class Translator(object):
             "#ddTargetLanguage2 > div.dropdown_top___13QlJ > button:nth-child(2)"
         )
         to_language.click()
-        print('click!')
+        print("click!")
         driver.implicitly_wait(10)
-#         ActionChains(driver).move_to_element(to_language).click(to_language).perform()
 
         eng = driver.find_element_by_css_selector(
             "#ddTargetLanguage2 > div.dropdown_menu___XsI_h.active___3VPGL > ul > li:nth-child(2)"
         )
         eng.click()
         driver.implicitly_wait(10)
-#         ActionChains(driver).move_to_element(eng).click(eng).perform()
         print("ENG selected", sep="\t")
 
         print(f"done!")
@@ -168,8 +168,12 @@ if __name__ == "__main__":
         description="Before get started you need read README"
     )
 
-    parser.add_argument("--input_dir", type=str, default="./preprocessed/test_entity_korean.txt")
-    parser.add_argument("--output_dir", type=str, default="./preprocessed/test_entity_kr2en.json")
+    parser.add_argument(
+        "--input_dir", type=str, default="./preprocessed/test_entity_korean.txt"
+    )
+    parser.add_argument(
+        "--output_dir", type=str, default="./preprocessed/test_entity_kr2en.json"
+    )
     parser.add_argument("--multiprocessor", type=int, default=int(8))
     parser.add_argument("--path", type=str, default="chromedriver")
     args = parser.parse_args()
