@@ -71,7 +71,7 @@ def get_model_pretrained_type(load_state_dict: str):
 
 
 if __name__ == "__main__":
-    MODELNAME = "XLMSequenceClf_roberta-base_20210420123153/XLMSequenceClf_roberta-base_ep(13)acc(0.7649)loss(0.0041)id(20210420123153).pth"
+    MODELNAME = "[MODELNAME]_[PRETRAINEDTYPE]_[SAVEID]/[MODELNAME]_[PRETRAINEDTYPE]_[EPOCH(XX)][ACC(0.XXXX)][LOSS(0.XXXX)][SAVEID(YYYYMMDDHHMMSS)].pth"
     LOAD_STATE_DICT = os.path.join(Config.CheckPoint, MODELNAME)
 
     parser = argparse.ArgumentParser()
@@ -85,4 +85,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     predict(**vars(args))
-

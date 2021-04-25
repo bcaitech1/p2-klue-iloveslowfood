@@ -15,8 +15,8 @@ from evaluation import compute_metrics
 from config import ModelType, Config, Optimizer, PreTrainedType, PreProcessType, Loss
 
 warnings.filterwarnings("ignore")
-os.environ['WANDB_LOG_MODEL'] = 'true'
-os.environ['WANDB_WATCH'] = 'all'
+os.environ["WANDB_LOG_MODEL"] = "true"
+os.environ["WANDB_WATCH"] = "all"
 
 TOTAL_SAMPLES = 9000
 
@@ -44,65 +44,68 @@ def train(
 ):
     K_FOLD = False
     set_seed(seed)
-    
 
     # tokenization phase
     tokenizer = load_tokenizer(model_type=model_type, preprocess_type=preprocess_type)
-    
+
     # Load data
     # Monolingual K-Fold DataL just for KOR
-    if os.path.basename(data_root).startswith('kfold') and 'monolingual' in data_root:
-        print(f'TRAIN TYPE: monolingual K-Fold - {os.path.basename(data_root)}')
+    if os.path.basename(data_root).startswith("kfold") and "monolingual" in data_root:
+        print(f"TRAIN TYPE: monolingual K-Fold - {os.path.basename(data_root)}")
         K_FOLD = True
-        fold_num = int(os.path.basename(data_root).split('_')[1])
-        train_data = load_data(f'./preprocessed/kfold_{fold_num}_train_monolingual.csv')
-        valid_data = load_data(f'./preprocessed/kfold_{fold_num}_test_monolingual.csv')
+        fold_num = int(os.path.basename(data_root).split("_")[1])
+        train_data = load_data(f"./preprocessed/kfold_{fold_num}_train_monolingual.csv")
+        valid_data = load_data(f"./preprocessed/kfold_{fold_num}_test_monolingual.csv")
         train_data = preprocess_text(train_data, model_type, preprocess_type)
         valid_data = preprocess_text(valid_data, model_type, preprocess_type)
-    
+
     # Multilingual K-Fold DataL for KOR, ENG, FRN, SPN
-    elif os.path.basename(data_root).startswith('kfold') and 'multilingual' in data_root:
-        print(f'TRAIN TYPE: multilingual K-Fold - {os.path.basename(data_root)}')
+    elif (
+        os.path.basename(data_root).startswith("kfold") and "multilingual" in data_root
+    ):
+        print(f"TRAIN TYPE: multilingual K-Fold - {os.path.basename(data_root)}")
         K_FOLD = True
-        fold_num = int(os.path.basename(data_root).split('_')[1])
-        train_data = load_data(f'./preprocessed/kfold_{fold_num}_train_multilingual.csv')
-        valid_data = load_data(f'./preprocessed/kfold_{fold_num}_test_multilingual.csv')
+        fold_num = int(os.path.basename(data_root).split("_")[1])
+        train_data = load_data(
+            f"./preprocessed/kfold_{fold_num}_train_multilingual.csv"
+        )
+        valid_data = load_data(f"./preprocessed/kfold_{fold_num}_test_multilingual.csv")
         train_data = preprocess_text(train_data, model_type, preprocess_type)
         valid_data = preprocess_text(valid_data, model_type, preprocess_type)
-    
+
     # For singualar model which contains monolingual, multilingual
     else:
-        print('TRAIN TYPE: singular')
+        print("TRAIN TYPE: singular")
         data = load_data(data_root)
         data = preprocess_text(data, model_type, preprocess_type)
-    
+
     # for K-Fold learning
     if K_FOLD:
         tokenized_train = tokenize(train_data, tokenizer)
         tokenized_valid = tokenize(valid_data, tokenizer)
-        
-        train_labels = train_data['label'].values
-        valid_labels = valid_data['label'].values
+
+        train_labels = train_data["label"].values
+        valid_labels = valid_data["label"].values
 
         train_dataset = REDatasetForTrainer(tokenized_train, train_labels)
         valid_dataset = REDatasetForTrainer(tokenized_valid, valid_labels)
-    
+
     # for singular learning
     elif valid_size > 0:
         train_data, valid_data = split_data(data, valid_size)
         tokenized_train = tokenize(train_data, tokenizer)
         tokenized_valid = tokenize(valid_data, tokenizer)
-        
-        train_labels = train_data['label'].values
-        valid_labels = valid_data['label'].values
+
+        train_labels = train_data["label"].values
+        valid_labels = valid_data["label"].values
 
         train_dataset = REDatasetForTrainer(tokenized_train, train_labels)
         valid_dataset = REDatasetForTrainer(tokenized_valid, valid_labels)
-    
+
     # for singular learning with WHOLE train data. TODO: maybe insufficient implementation
-    else: 
+    else:
         tokenized_train = tokenize(data, tokenizer)
-        train_labels = data['label'].values
+        train_labels = data["label"].values
         train_dataset = REDatasetForTrainer(tokenized_train, train_labels)
 
     model = load_model(
@@ -111,13 +114,13 @@ def train(
     model.resize_token_embeddings(len(tokenizer))
     model.to(device)
     model.train()
-    
+
     # train configuration phase
     training_args = TrainingArguments(
         output_dir=save_path,
         save_total_limit=1,
         save_steps=200,
-        evaluation_strategy='epoch',
+        evaluation_strategy="epoch",
         num_train_epochs=epochs,
         learning_rate=lr,
         per_device_train_batch_size=train_batch_size,
@@ -126,12 +129,12 @@ def train(
         weight_decay=0.01,
         dataloader_num_workers=2,
         label_smoothing_factor=0.5,
-        logging_dir='./logs',
+        logging_dir="./logs",
         logging_steps=400,
-        report_to='wandb',
-        run_name=RUN_NAME
+        report_to="wandb",
+        run_name=RUN_NAME,
     )
-    
+
     # train & validation phase
     trainer = Trainer(
         model=model,
@@ -179,11 +182,15 @@ if __name__ == "__main__":
         TIMESTAMP + "_" + args.model_type
     )  # save file name: [MODEL-TYPE]_[PRETRAINED-TYPE]_[EPOCH][ACC][LOSS][ID].pth
     run = wandb.init(
-        project="pstage-klue", 
-        name=RUN_NAME, 
-        tags=[args.model_type, os.path.basename(args.pretrained_type), str(args.num_classes)],
-        group=args.model_type
-        )
+        project="pstage-klue",
+        name=RUN_NAME,
+        tags=[
+            args.model_type,
+            os.path.basename(args.pretrained_type),
+            str(args.num_classes),
+        ],
+        group=args.model_type,
+    )
     wandb.config.update(args)
 
     # make checkpoint directory to save model during train
@@ -194,12 +201,12 @@ if __name__ == "__main__":
 
     # save param dict
     save_param = vars(args)
-    save_param['device'] = save_param['device'].type
-    save_json(os.path.join(args.save_path, 'param_dict.json'), save_param)
+    save_param["device"] = save_param["device"].type
+    save_json(os.path.join(args.save_path, "param_dict.json"), save_param)
 
     print("=" * 100)
     print(args)
     print("=" * 100)
     train(**vars(args))
 
-    run.finish() # finish wandb's session
+    run.finish()  # finish wandb's session

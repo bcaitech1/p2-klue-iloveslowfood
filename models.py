@@ -31,7 +31,7 @@ def load_model(
 
     Returns:
         model(torch.nn): 학습에 활용할 모델
-    """    
+    """
     print("Load Model...", end="\t")
     # make BERT configuration
 
@@ -39,12 +39,12 @@ def load_model(
     if model_type == ModelType.BertBase:
         if load_state_dict is not None:
             model = BertModel.from_pretrained(load_state_dict)
-        
+
         else:
             bert_config = BertConfig.from_pretrained(pretrained_type)
             bert_config.num_labels = num_classes
             model = BertModel.from_pretrained(pretrained_type, config=bert_config)
-    
+
     # XLM Roberta Base
     elif model_type == ModelType.XLMSequenceClf:
         if load_state_dict is not None:
@@ -52,8 +52,10 @@ def load_model(
         else:
             config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRoberta)
             config.num_labels = num_classes
-            model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRoberta, config=config)
-    
+            model = XLMRobertaForSequenceClassification.from_pretrained(
+                PreTrainedType.XLMRoberta, config=config
+            )
+
     # XLM Roberta Large
     elif model_type == ModelType.XLMSequenceClfL:
         if load_state_dict is not None:
@@ -61,17 +63,18 @@ def load_model(
         else:
             config = XLMRobertaConfig.from_pretrained(PreTrainedType.XLMRobertaL)
             config.num_labels = num_classes
-            model = XLMRobertaForSequenceClassification.from_pretrained(PreTrainedType.XLMRobertaL, config=config)
-            
+            model = XLMRobertaForSequenceClassification.from_pretrained(
+                PreTrainedType.XLMRobertaL, config=config
+            )
 
     # Bert for Sequence Classification
     elif model_type == ModelType.BertSequenceClf:
         if load_state_dict is not None:
-            print(f'Load params from {load_state_dict}...', end='\t')
+            print(f"Load params from {load_state_dict}...", end="\t")
             model = BertForSequenceClassification.from_pretrained(
                 pretrained_model_name_or_path=load_state_dict
-                )
-            print('done!')
+            )
+            print("done!")
 
         else:
             bert_config = BertConfig.from_pretrained(pretrained_type)
@@ -103,12 +106,13 @@ def load_model(
     elif model_type == ModelType.KoELECTRAv3:
         model = VanillaKoElectra(num_classes=num_classes)
 
-    
     elif model_type == ModelType.XLMSequenceClfL:
         config = XLMRobertaConfig.from_pretrained(model_type)
         config.num_labels = num_classes
-        model = XLMRobertaForSequenceClassification.from_pretrained(model_type, config=config)
-        
+        model = XLMRobertaForSequenceClassification.from_pretrained(
+            model_type, config=config
+        )
+
     else:
         raise NotImplementedError()
 
@@ -140,9 +144,7 @@ class VanillaKoBert(nn.Module):
 class VanillaKoElectra(nn.Module):
     def __init__(self, num_classes, pooler_idx: int = 0):
         super(VanillaKoElectra, self).__init__()
-        self.backbone = ElectraModel.from_pretrained(
-            PreTrainedType.KoELECTRAv3
-        )
+        self.backbone = ElectraModel.from_pretrained(PreTrainedType.KoELECTRAv3)
         self.linear = nn.Linear(in_features=768, out_features=num_classes)
         self.idx = pooler_idx
 
@@ -151,7 +153,7 @@ class VanillaKoElectra(nn.Module):
             input_ids=input_ids,
             token_type_ids=token_type_ids,
             attention_mask=attention_mask,
-            labels=labels
+            labels=labels,
         )
         x = x.last_hidden_state[:, self.idx, :]
         output = self.linear(x)
@@ -164,9 +166,9 @@ class VanillaKoElectra(nn.Module):
 class VanillaBert_v2(nn.Module):
     def __init__(
         self,
-        model_type: str = ModelType.SequenceClf,  # BertForSequenceClassification
-        pretrained_type: str = PreTrainedType.MultiLingual,  # bert-base-multilingual-cased
-        num_labels: int = Config.NumClasses,  # 42
+        model_type: str = ModelType.SequenceClf, 
+        pretrained_type: str = PreTrainedType.MultiLingual,
+        num_labels: int = Config.NumClasses,
         pooler_idx: int = 0,
     ):
         super(VanillaBert_v2, self).__init__()
@@ -257,5 +259,5 @@ if __name__ == "__main__":
         model_type=ModelType.SequenceClf,
         pretrained_type=PreTrainedType.MultiLingual,
         num_classes=Config.Num41,
-        load_state_dict='./saved_models/BertForSequenceClassification_bert-base-multilingual-cased_20210421122305/checkpoint-1000/'
-        )
+        load_state_dict="./saved_models/BertForSequenceClassification_bert-base-multilingual-cased_20210421122305/checkpoint-1000/",
+    )

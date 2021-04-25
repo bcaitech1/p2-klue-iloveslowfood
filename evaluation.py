@@ -17,8 +17,8 @@ def compute_metrics(pred) -> dict:
 
     Returns:
         dict: 검증 결과
-    """    
+    """
     labels = pred.label_ids
     preds = pred.predictions.argmax(-1)
     acc = accuracy_score(labels, preds)
-    return {'accuracy': acc}
+    return {"accuracy": acc}

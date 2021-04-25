@@ -31,6 +31,7 @@ def load_json(path: str) -> dict:
         output = json.load(json_file)
     return output
 
+
 def set_seed(seed: int = 42, contain_cuda: bool = False):
     random.seed(seed)
     np.random.seed(seed)
@@ -43,6 +44,7 @@ def set_seed(seed: int = 42, contain_cuda: bool = False):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     print(f"Seed set as {seed}")
+
 
 def get_timestamp():
     KST = datetime.timezone(datetime.timedelta(hours=9))
