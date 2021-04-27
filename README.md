@@ -20,3 +20,13 @@
 
 - ***Metric.*** Accuracy
 - ***Data.*** 1만 개 한국어 문장 데이터. 각 문장은 문장 내 두 개체의 이름과 위치, 개체 간 관계 정보를 포함. 9,000개는 학습용 데이터로 제공되며, 나머지 1천 개는 리더 보드 검증용 데이터로 활용
+
+## Performances
+
+### Scores
+
+- Public Accuracy: 80.90%
+
+### Best Model Configuration
+
+###### I. Structure: *Out of Fold Ensemble with XLM-Roberta Large(5-Fold)*
